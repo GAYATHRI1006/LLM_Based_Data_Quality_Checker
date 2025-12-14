@@ -7,10 +7,14 @@ It automatically detects **missing values**, **duplicates**, **data type mismatc
 
 ## 📸 Project Screenshots
  ![Screenshot](./data1.png) 
- ![Screenshot](./screenshots/data2.png) 
+![Screenshot](./data2.png) 
+![Screenshot](./data3.png) 
+![Screenshot](./data4.png) 
+![Screenshot](./data5.png) 
+![Screenshot](./data6.png) 
+![Screenshot](./data7.png) 
+![Screenshot](./data8.png) 
 
-
-![Screenshot](./screenshots/data3.png)
 
 
 
