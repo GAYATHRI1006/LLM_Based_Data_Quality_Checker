@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Data Quality Checker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #c3ecf7, #f5f5f5);
+      padding: 40px 10px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #0a4b78;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      margin: 20px auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      width: 95%;
+      max-width: 900px;
+      text-align: left;
+    }
+
+    input[type=file] {
+      margin: 15px 0;
+      border: 1px solid #0a4b78;
+      border-radius: 10px;
+      padding: 10px;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    button {
+      background-color: #0a4b78;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background-color: #0970b8;
+    }
+
+    #loading {
+      display: none;
+      margin-top: 15px;
+      color: #0a4b78;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    /* 🌈 Gradient Score Bar */
+    .progress-bar {
+      height: 30px;
+      border-radius: 15px;
+      background: #eee;
+      width: 90%;
+      max-width: 700px;
+      margin: 15px auto;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 15px;
+      width: 0%;
+      transition: width 1.2s ease-in-out;
+      background: linear-gradient(90deg, #f44336 0%, #ff9800 35%, #ffeb3b 60%, #4caf50 100%);
+    }
+
+    .score-label {
+      position: absolute;
+      width: 100%;
+      top: 0;
+      left: 0;
+      height: 100%;
+      line-height: 30px;
+      color: white;
+      font-weight: 600;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    #scoreText {
+      margin-top: 8px;
+      font-weight: 600;
+      text-align: center;
+      color: #0a4b78;
+    }
+
+    /* RESULT AREA */
+    #result {
+      margin-top: 15px;
+      white-space: normal;
+      font-family: "Poppins", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-x: auto;
+      max-height: none;
+      padding-right: 5px;
+    }
+
+    /* Markdown styles */
+    #result h2, #result h3, #result h4 {
+      margin-top: 16px;
+      color: #0a4b78;
+    }
+
+    #result p { margin: 6px 0; }
+    #result ul, #result ol { margin-left: 20px; margin-bottom: 8px; }
+
+    /* Table styling */
+    #result table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+
+    #result th, #result td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    #result th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+
+    #result tr:nth-child(even) { background-color: #fafafa; }
+
+    #result table th:first-child,
+    #result table td:first-child {
+      width: 60px;
+      text-align: center;
+      font-weight: 600;
+      background-color: #f9fafb;
+    }
+
+    /* PDF export safety */
+    #outputCard, #result { overflow: visible !important; }
+    table { page-break-inside: auto !important; }
+    tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+    h2, h3 { page-break-after: avoid !important; }
+
+    @media (max-width: 600px) {
+      body { padding: 20px 5px; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 LLM-based Data Quality Checker</h1>
+
+  <div class="card" style="text-align:center;">
+    <form id="uploadForm">
+      <input type="file" id="fileInput" accept=".csv" required />
+      <br />
+      <button type="submit">Upload & Analyze</button>
+    </form>
+    <div id="loading">⏳ Analyzing your CSV file, please wait...</div>
+  </div>
+
+  <div class="card" id="outputCard" style="display:none;">
+    <h3 style="text-align:center;">📊 Data Quality Score</h3>
+    <div class="progress-bar">
+      <div id="scoreBar" class="progress-bar-fill"></div>
+      <div id="scoreLabel" class="score-label">0%</div>
+    </div>
+    <p id="scoreText"></p>
+    <hr/>
+    <div id="result"></div>
+    <div style="text-align:center; margin-top:25px;">
+      <button id="downloadBtn">📥 Download Report as PDF</button>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const loading = document.getElementById("loading");
+    const outputCard = document.getElementById("outputCard");
+    const result = document.getElementById("result");
+    const scoreBar = document.getElementById("scoreBar");
+    const scoreLabel = document.getElementById("scoreLabel");
+    const scoreText = document.getElementById("scoreText");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById("fileInput");
+      if (!fileInput.files.length) {
+        alert("Please select a CSV file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      loading.style.display = "block";
+      outputCard.style.display = "none";
+      result.innerHTML = "";
+
+      try {
+        const res = await fetch("/analyze_csv/", { method: "POST", body: formData });
+        const data = await res.json();
+
+        loading.style.display = "none";
+        outputCard.style.display = "block";
+
+        const score = Math.min(Math.max(data.data_quality_score, 0), 100);
+        scoreBar.style.width = score + "%";
+        scoreLabel.innerText = `${score.toFixed(2)} / 100`;
+        scoreText.innerText = `Overall Data Quality Score: ${score.toFixed(2)} / 100`;
+
+        result.innerHTML = marked.parse(data.data_quality_summary);
+      } catch (err) {
+        loading.style.display = "none";
+        alert("Error while analyzing file. Check console for details.");
+        console.error(err);
+      }
+    });
+
+    // 🧾 Download FULL PDF (no cropping)
+    downloadBtn.addEventListener("click", () => {
+      const element = document.getElementById("outputCard");
+
+      // Expand temporarily for full capture
+      const prevMax = element.style.maxHeight;
+      element.style.maxHeight = "none";
+      element.style.overflow = "visible";
+
+      const opt = {
+        margin: 10,
+        filename: "Data_Quality_Report.pdf",
+        image: { type: "jpeg", quality: 1 },
+        html2canvas: {
+          scale: 2,
+          scrollY: 0,
+          useCORS: true,
+          letterRendering: true,
+          windowWidth: document.body.scrollWidth,
+          windowHeight: document.body.scrollHeight
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.style.maxHeight = prevMax;
+      });
+    });
+  </script>
+</body>
+</html>
