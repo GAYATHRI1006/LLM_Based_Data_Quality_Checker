@@ -6,16 +6,13 @@ It automatically detects **missing values**, **duplicates**, **data type mismatc
 ---
 
 ## 📸 Project Screenshots
+ ![Screenshot](./screenshots/data1.png) 
+ ![Screenshot](./screenshots/data2.png) 
 
-| Upload & Analyze CSV | AI-Generated Report |
-|----------------------|--------------------|
-| ![Upload Screenshot](./screenshots/upload.png) | ![Report Screenshot](./screenshots/report.png) |
 
-| PDF Export Example |
-|--------------------|
-| ![PDF Screenshot](./screenshots/pdf.png) |
+![Screenshot](./screenshots/data3.png)
 
-> 🖼️ *Place your screenshots inside a folder named `screenshots/` in your repository.*
+
 
 ---
 
